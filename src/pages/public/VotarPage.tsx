@@ -1,4 +1,11 @@
-import { CheckCircle2, ChevronLeft, Send } from 'lucide-react'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  Clock3,
+  Send,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getFriendlyErrorMessage } from '../../lib/errors'
@@ -20,6 +27,7 @@ export function VotarPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isReviewing, setIsReviewing] = useState(false)
   const [hasVoted, setHasVoted] = useState(false)
+  const [isVoteSubmitted, setIsVoteSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -124,6 +132,7 @@ export function VotarPage() {
     try {
       await registrarVoto(votacaoId, respostas)
       localStorage.setItem(getVotoRegistradoKey(votacaoId), 'true')
+      setIsVoteSubmitted(true)
       setHasVoted(true)
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error))
@@ -149,6 +158,7 @@ export function VotarPage() {
       <VotingBlock
         title="Nao foi possivel carregar"
         message={errorMessage}
+        icon={AlertTriangle}
         tone="error"
       />
     )
@@ -159,6 +169,8 @@ export function VotarPage() {
       <VotingBlock
         title="Votacao nao encontrada"
         message="Confira se o link ou QR Code utilizado esta correto."
+        icon={AlertTriangle}
+        tone="error"
       />
     )
   }
@@ -166,9 +178,14 @@ export function VotarPage() {
   if (hasVoted) {
     return (
       <VotingBlock
-        title="Voto ja registrado"
-        message="Este navegador ja enviou um voto para esta votacao."
-        success
+        title={isVoteSubmitted ? 'Voto enviado' : 'Voto ja registrado'}
+        message={
+          isVoteSubmitted
+            ? 'Seu voto foi registrado com sucesso. Nenhuma acao adicional e necessaria.'
+            : 'Este navegador ja enviou um voto para esta votacao.'
+        }
+        icon={CheckCircle2}
+        tone="success"
       />
     )
   }
@@ -178,6 +195,8 @@ export function VotarPage() {
       <VotingBlock
         title="Votacao aguardando"
         message="Aguarde o organizador abrir a votacao para iniciar."
+        icon={Clock3}
+        tone="waiting"
       />
     )
   }
@@ -187,6 +206,8 @@ export function VotarPage() {
       <VotingBlock
         title="Votacao encerrada"
         message="O periodo de envio de votos foi finalizado pelo organizador."
+        icon={AlertTriangle}
+        tone="warning"
       />
     )
   }
@@ -196,6 +217,8 @@ export function VotarPage() {
       <VotingBlock
         title="Votacao incompleta"
         message="O organizador ainda precisa cadastrar equipes e criterios."
+        icon={Clock3}
+        tone="waiting"
       />
     )
   }
@@ -205,6 +228,7 @@ export function VotarPage() {
       <div className="voting-preview">
         <p className="eyebrow light">Revisao</p>
         <h1>Confira seu voto</h1>
+        <p className="review-helper">Revise cada criterio antes de confirmar.</p>
         <div className="review-list">
           {criterios.map((criterio) => {
             const equipe = equipes.find((item) => item.id === respostas[criterio.id])
@@ -259,15 +283,18 @@ export function VotarPage() {
           return (
             <button
               className={`team-card ${isSelected ? 'selected' : ''}`}
+              aria-pressed={isSelected}
               key={equipe.id}
               type="button"
               onClick={() => selectEquipe(equipe.id)}
             >
-              <span>
+              <span className="team-card-copy">
                 <strong>{equipe.nome}</strong>
                 {equipe.descricao ? <small>{equipe.descricao}</small> : null}
               </span>
-              {isSelected ? <CheckCircle2 aria-hidden="true" /> : null}
+              <span className="team-selected-indicator" aria-hidden="true">
+                {isSelected ? <CheckCircle2 size={22} /> : null}
+              </span>
             </button>
           )
         })}
@@ -283,7 +310,12 @@ export function VotarPage() {
           <ChevronLeft size={18} aria-hidden="true" />
           Voltar
         </button>
-        <button className="primary-action" type="button" onClick={goNext}>
+        <button
+          className="primary-action"
+          disabled={!selectedEquipeId}
+          type="button"
+          onClick={goNext}
+        >
           {currentStep === criterios.length - 1 ? 'Revisar' : 'Continuar'}
         </button>
       </div>
@@ -292,25 +324,21 @@ export function VotarPage() {
 }
 
 function VotingBlock({
+  icon: Icon = CheckCircle2,
   message,
-  success = false,
   tone = 'default',
   title,
 }: {
+  icon?: LucideIcon
   message: string
-  success?: boolean
-  tone?: 'default' | 'error'
+  tone?: 'default' | 'error' | 'success' | 'waiting' | 'warning'
   title: string
 }) {
   return (
-    <div className="voting-preview">
+    <div className={`voting-preview voting-state state-${tone}`}>
       <p className="eyebrow light">PickTheBest</p>
-      <div
-        className={`public-status-icon ${success ? 'success' : ''} ${
-          tone === 'error' ? 'error' : ''
-        }`}
-      >
-        <CheckCircle2 aria-hidden="true" />
+      <div className="public-status-icon">
+        <Icon aria-hidden="true" />
       </div>
       <h1>{title}</h1>
       <p>{message}</p>

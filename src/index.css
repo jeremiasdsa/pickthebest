@@ -509,8 +509,9 @@ p {
   display: grid;
   min-height: 100svh;
   place-items: center;
-  overflow: hidden;
-  padding: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 24px 16px;
   color: var(--text-light);
   background: var(--dark);
 }
@@ -537,11 +538,11 @@ p {
 
 .public-card {
   position: relative;
-  width: min(460px, 100%);
+  width: min(520px, 100%);
   border: 1px solid rgba(248, 250, 252, 0.22);
   border-radius: 8px;
-  padding: 24px;
-  background: rgba(6, 24, 39, 0.56);
+  padding: 26px;
+  background: rgba(6, 24, 39, 0.66);
   box-shadow: 0 28px 100px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(18px);
   animation: public-card-in 260ms ease-out;
@@ -549,21 +550,29 @@ p {
 
 .voting-preview {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .voting-preview h1 {
-  font-size: 2rem;
-  line-height: 1.08;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 1.95rem;
+  line-height: 1.1;
 }
 
 .voting-preview p {
   color: var(--text-light-soft);
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .voting-preview.is-loading {
   min-height: 280px;
+  align-content: center;
+}
+
+.voting-state {
+  min-height: 320px;
   align-content: center;
 }
 
@@ -580,7 +589,7 @@ p {
 
 .progress-track {
   overflow: hidden;
-  height: 8px;
+  height: 10px;
   border-radius: 999px;
   background: rgba(248, 250, 252, 0.16);
 }
@@ -594,9 +603,14 @@ p {
 }
 
 .team-card {
-  justify-content: space-between;
-  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 14px;
+  justify-content: initial;
+  width: 100%;
+  min-height: 82px;
   border: 1px solid rgba(248, 250, 252, 0.22);
+  padding: 16px;
   color: var(--text-light);
   background: rgba(255, 255, 255, 0.1);
   text-align: left;
@@ -611,15 +625,32 @@ p {
   transform: translateY(-1px);
 }
 
-.team-card span {
+.team-card-copy {
   display: grid;
   gap: 4px;
+  min-width: 0;
+}
+
+.team-card strong,
+.team-card small {
+  overflow-wrap: anywhere;
 }
 
 .team-card small {
   color: var(--text-light-soft);
   font-size: 0.84rem;
   font-weight: 500;
+  line-height: 1.4;
+}
+
+.team-selected-indicator {
+  display: grid;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  align-self: center;
+  color: var(--gold);
 }
 
 .team-card.selected {
@@ -633,6 +664,10 @@ p {
   gap: 8px;
   background: var(--cyan);
   color: var(--dark);
+}
+
+.primary-action:hover {
+  background: #58ddf1;
 }
 
 .ghost-action {
@@ -663,25 +698,41 @@ p {
   padding: 12px 14px;
   color: #fecaca;
   background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.28);
 }
 
 .public-status-icon {
   display: grid;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   place-items: center;
-  border: 1px solid rgba(248, 250, 252, 0.22);
+  border: 1px solid rgba(242, 201, 76, 0.28);
   border-radius: 999px;
   color: var(--gold);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(242, 201, 76, 0.12);
 }
 
-.public-status-icon.success {
+.public-status-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.state-success .public-status-icon {
+  border-color: rgba(34, 197, 94, 0.32);
   color: var(--success);
+  background: rgba(34, 197, 94, 0.12);
 }
 
-.public-status-icon.error {
+.state-error .public-status-icon {
+  border-color: rgba(239, 68, 68, 0.32);
   color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.state-waiting .public-status-icon {
+  border-color: rgba(0, 191, 234, 0.32);
+  color: var(--cyan);
+  background: rgba(0, 191, 234, 0.12);
 }
 
 .public-skeleton {
@@ -704,16 +755,32 @@ p {
 
 .review-item {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid rgba(248, 250, 252, 0.18);
   border-radius: 8px;
-  padding: 14px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.08);
 }
 
 .review-item span {
   color: var(--text-light-soft);
   font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.review-item strong {
+  overflow-wrap: anywhere;
+}
+
+.review-helper {
+  margin-top: -8px;
+}
+
+.public-card button:focus-visible,
+.public-card .button-link:focus-visible {
+  outline: 3px solid rgba(242, 201, 76, 0.82);
+  outline-offset: 3px;
 }
 
 @keyframes public-card-in {
@@ -780,30 +847,40 @@ p {
 
   .public-shell {
     align-items: stretch;
-    padding: 12px;
+    padding: 0;
   }
 
   .public-card {
     width: 100%;
-    min-height: calc(100svh - 24px);
-    align-content: center;
-    padding: 22px;
+    min-height: 100svh;
+    border-width: 0;
+    border-radius: 0;
+    padding: 24px 18px;
+    background: rgba(6, 24, 39, 0.72);
   }
 
   .voting-preview {
-    gap: 16px;
+    min-height: calc(100svh - 48px);
+    align-content: center;
+    gap: 18px;
   }
 
   .voting-preview h1 {
-    font-size: 1.75rem;
+    font-size: 1.72rem;
+    line-height: 1.12;
   }
 
   .team-card {
-    min-height: 78px;
-    padding: 14px;
+    min-height: 86px;
+    padding: 16px 14px;
   }
 
   .public-actions {
     grid-template-columns: 1fr;
+  }
+
+  .public-actions button {
+    width: 100%;
+    min-height: 52px;
   }
 }
