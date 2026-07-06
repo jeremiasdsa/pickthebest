@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  increment,
   onSnapshot,
   query,
   serverTimestamp,
@@ -79,6 +80,7 @@ export function criarVotacao(input: {
   return addDoc(collection(db, 'votacoes'), {
     ...input,
     status: 'AGUARDANDO' satisfies StatusVotacao,
+    rodadaAtual: 1,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -101,6 +103,14 @@ export function atualizarStatusVotacao(votacaoId: string, status: StatusVotacao)
   })
 }
 
+export function iniciarNovaRodada(votacaoId: string) {
+  return updateDoc(doc(db, 'votacoes', votacaoId), {
+    rodadaAtual: increment(1),
+    status: 'AGUARDANDO' satisfies StatusVotacao,
+    updatedAt: serverTimestamp(),
+  })
+}
+
 export function excluirVotacao(votacaoId: string) {
   return deleteDoc(doc(db, 'votacoes', votacaoId))
 }
@@ -113,6 +123,7 @@ function mapVotacaoDocument(snapshot: DocumentSnapshot<DocumentData>): Votacao {
     titulo: data?.titulo ?? '',
     descricao: data?.descricao ?? '',
     status: data?.status ?? 'AGUARDANDO',
+    rodadaAtual: data?.rodadaAtual ?? 1,
     createdBy: data?.createdBy ?? '',
     createdAt: data?.createdAt?.toDate?.(),
     updatedAt: data?.updatedAt?.toDate?.(),

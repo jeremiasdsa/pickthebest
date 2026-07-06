@@ -12,7 +12,7 @@ import { getFriendlyErrorMessage } from '../../lib/errors'
 import { subscribeToCriterios } from '../../services/criteriosService'
 import { subscribeToEquipes } from '../../services/equipesService'
 import {
-  getVotoRegistradoKey,
+  getVotoRegistradoRodadaKey,
   registrarVoto,
 } from '../../services/votosService'
 import { subscribeToVotacao } from '../../services/votacoesService'
@@ -47,7 +47,6 @@ export function VotarPage() {
       return
     }
 
-    setHasVoted(localStorage.getItem(getVotoRegistradoKey(votacaoId)) === 'true')
     setIsLoading(true)
     setErrorMessage('')
 
@@ -81,6 +80,18 @@ export function VotarPage() {
       unsubscribeCriterios()
     }
   }, [votacaoId])
+
+  useEffect(() => {
+    if (!votacaoId || !votacao) {
+      return
+    }
+
+    setHasVoted(
+      localStorage.getItem(
+        getVotoRegistradoRodadaKey(votacaoId, votacao.rodadaAtual),
+      ) === 'true',
+    )
+  }, [votacao, votacaoId])
 
   function selectEquipe(equipeId: string) {
     if (!currentCriterio) {
@@ -121,7 +132,7 @@ export function VotarPage() {
   }
 
   async function handleSubmitVote() {
-    if (!votacaoId || !allCriteriaAnswered) {
+    if (!votacaoId || !votacao || !allCriteriaAnswered) {
       setErrorMessage('Revise suas escolhas antes de enviar.')
       return
     }
@@ -130,8 +141,11 @@ export function VotarPage() {
     setErrorMessage('')
 
     try {
-      await registrarVoto(votacaoId, respostas)
-      localStorage.setItem(getVotoRegistradoKey(votacaoId), 'true')
+      await registrarVoto(votacaoId, respostas, votacao.rodadaAtual)
+      localStorage.setItem(
+        getVotoRegistradoRodadaKey(votacaoId, votacao.rodadaAtual),
+        'true',
+      )
       setIsVoteSubmitted(true)
       setHasVoted(true)
     } catch (error) {

@@ -19,6 +19,12 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/votacoes/$(votacaoId)).data.status == 'ABERTA';
     }
 
+    function votingCurrentRound(votacaoId) {
+      return get(/databases/$(database)/documents/votacoes/$(votacaoId)).data.keys().hasAny(['rodadaAtual'])
+        ? get(/databases/$(database)/documents/votacoes/$(votacaoId)).data.rodadaAtual
+        : 1;
+    }
+
     function ownsIncomingVoting() {
       return isSignedIn() && request.resource.data.createdBy == request.auth.uid;
     }
@@ -41,8 +47,10 @@ service cloud.firestore {
       match /votos/{votoId} {
         allow read: if ownsVoting(votacaoId);
         allow create: if votingIsOpen(votacaoId)
-          && request.resource.data.keys().hasOnly(['respostas', 'createdAt', 'clientInfo'])
+          && request.resource.data.keys().hasOnly(['respostas', 'rodada', 'createdAt', 'clientInfo'])
           && request.resource.data.respostas is map
+          && request.resource.data.rodada is number
+          && request.resource.data.rodada == votingCurrentRound(votacaoId)
           && request.resource.data.createdAt == request.time;
         allow update, delete: if false;
       }

@@ -7,6 +7,7 @@ import { subscribeToEquipes } from '../../services/equipesService'
 import { subscribeToVotos } from '../../services/resultadosService'
 import {
   atualizarStatusVotacao,
+  iniciarNovaRodada,
   subscribeToVotacao,
 } from '../../services/votacoesService'
 import type {
@@ -26,6 +27,7 @@ export function ControleVotacaoPage() {
   const [showResults, setShowResults] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isChangingStatus, setIsChangingStatus] = useState(false)
+  const [isStartingRound, setIsStartingRound] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   const publicUrl = useMemo(() => {
@@ -36,9 +38,15 @@ export function ControleVotacaoPage() {
     return `${window.location.origin}/votar/${votacaoId}`
   }, [votacaoId])
 
+  const votosDaRodadaAtual = useMemo(() => {
+    const rodadaAtual = votacao?.rodadaAtual ?? 1
+
+    return votos.filter((voto) => voto.rodada === rodadaAtual)
+  }, [votacao?.rodadaAtual, votos])
+
   const resultados = useMemo(
-    () => calcularResultados(votos, criterios, equipes),
-    [criterios, equipes, votos],
+    () => calcularResultados(votosDaRodadaAtual, criterios, equipes),
+    [criterios, equipes, votosDaRodadaAtual],
   )
 
   useEffect(() => {
@@ -119,6 +127,37 @@ export function ControleVotacaoPage() {
     }
   }
 
+  async function handleStartNewRound() {
+    if (!votacaoId || !votacao) {
+      return
+    }
+
+    if (votacao.status === 'ABERTA') {
+      setErrorMessage('Encerre a votacao antes de liberar uma nova rodada.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Liberar uma nova rodada permite que a plateia vote novamente neste link. Os votos anteriores serao preservados.',
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setIsStartingRound(true)
+    setErrorMessage('')
+
+    try {
+      await iniciarNovaRodada(votacaoId)
+      setShowResults(false)
+    } catch (error) {
+      setErrorMessage(getFriendlyErrorMessage(error))
+    } finally {
+      setIsStartingRound(false)
+    }
+  }
+
   return (
     <section className="admin-panel">
       <div>
@@ -147,8 +186,14 @@ export function ControleVotacaoPage() {
             <span className={`status-pill status-${votacao?.status.toLowerCase()}`}>
               {votacao?.status ?? 'CARREGANDO'}
             </span>
-            <strong>{votos.length} voto(s)</strong>
+            <strong>{votosDaRodadaAtual.length} voto(s)</strong>
           </div>
+          <p className="muted">
+            Rodada {votacao?.rodadaAtual ?? 1}
+            {votos.length !== votosDaRodadaAtual.length
+              ? ` - ${votos.length} voto(s) no historico`
+              : ''}
+          </p>
           <div className="status-grid">
             <button
               disabled={isChangingStatus || votacao?.status === 'AGUARDANDO'}
@@ -170,6 +215,16 @@ export function ControleVotacaoPage() {
               type="button"
             >
               Encerrar
+            </button>
+            <button
+              className="neutral-button"
+              disabled={
+                isStartingRound || isChangingStatus || votacao?.status === 'ABERTA'
+              }
+              onClick={() => void handleStartNewRound()}
+              type="button"
+            >
+              {isStartingRound ? 'Liberando...' : 'Liberar nova rodada'}
             </button>
           </div>
         </article>
@@ -234,7 +289,10 @@ export function ControleVotacaoPage() {
               </span>
             </div>
           ) : (
-            <ResultsView resultados={resultados} totalVotos={votos.length} />
+            <ResultsView
+              resultados={resultados}
+              totalVotos={votosDaRodadaAtual.length}
+            />
           )}
         </article>
       </div>

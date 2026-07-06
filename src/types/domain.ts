@@ -5,6 +5,7 @@ export interface Votacao {
   titulo: string
   descricao?: string
   status: StatusVotacao
+  rodadaAtual: number
   createdBy: string
   createdAt?: Date
   updatedAt?: Date
@@ -34,6 +35,7 @@ export interface Voto {
   id: string
   votacaoId: string
   respostas: RespostasVoto
+  rodada: number
   createdAt?: Date
   clientInfo?: {
     userAgent?: string

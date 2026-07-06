@@ -42,6 +42,7 @@ function mapVotoDocument(snapshot: DocumentSnapshot<DocumentData>): Voto {
     id: snapshot.id,
     votacaoId: snapshot.ref.parent.parent?.id ?? '',
     respostas: data?.respostas ?? {},
+    rodada: data?.rodada ?? 1,
     createdAt: data?.createdAt?.toDate?.(),
     clientInfo: data?.clientInfo,
   }
