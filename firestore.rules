@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsExistingVoting() {
+      return isSignedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    function ownsVoting(votacaoId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/votacoes/$(votacaoId)).data.createdBy == request.auth.uid;
+    }
+
+    function votingIsOpen(votacaoId) {
+      return get(/databases/$(database)/documents/votacoes/$(votacaoId)).data.status == 'ABERTA';
+    }
+
+    function ownsIncomingVoting() {
+      return isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+    }
+
+    match /votacoes/{votacaoId} {
+      allow create: if ownsIncomingVoting();
+      allow read: if true;
+      allow update, delete: if ownsExistingVoting();
+
+      match /equipes/{equipeId} {
+        allow read: if true;
+        allow write: if ownsVoting(votacaoId);
+      }
+
+      match /criterios/{criterioId} {
+        allow read: if true;
+        allow write: if ownsVoting(votacaoId);
+      }
+
+      match /votos/{votoId} {
+        allow read: if ownsVoting(votacaoId);
+        allow create: if votingIsOpen(votacaoId)
+          && request.resource.data.keys().hasOnly(['respostas', 'createdAt', 'clientInfo'])
+          && request.resource.data.respostas is map
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
